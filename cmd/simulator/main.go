@@ -22,7 +22,7 @@ func main() {
 		naiveP2PDelay = flag.Duration("naivep2p.delay", 10*time.Millisecond, "Delay for each step")
 		input         = flag.String("i", "network.json", "Input filename for pregenerated data to be used with simulation")
 		output        = flag.String("o", "propagation.json", "Output filename for p2p sending data")
-		ggethlogLevel = flag.String("loglevel", "crit", "Geth log level for whisper simulator (crti, error, warn, info, debug, trace)")
+		gethlogLevel  = flag.String("loglevel", "crit", "Geth log level for whisper simulator (crti, error, warn, info, debug, trace)")
 	)
 	flag.Parse()
 
@@ -42,7 +42,7 @@ func main() {
 	case "naivep2p":
 		sim = naivep2p.NewSimulator(data, *naiveP2PN, *naiveP2PDelay)
 	case "whisperv6":
-		lvl, err := gethlog.LvlFromString(*ggethlogLevel)
+		lvl, err := gethlog.LvlFromString(*gethlogLevel)
 		if err != nil {
 			lvl = gethlog.LvlCrit
 		}
