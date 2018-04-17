@@ -62,7 +62,6 @@ func NewSimulator(data *graph.Graph) *Simulator {
 		}
 		// it's important to init whisper service here, as it
 		// be initialized for each peer
-		log.Println("Generating new whisper: ", node.ID())
 		service := whisper.New(cfg)
 		whispers[node.ID()] = service
 	}
@@ -100,7 +99,6 @@ func NewSimulator(data *graph.Graph) *Simulator {
 		case event := <-events:
 			if event.Type == simulations.EventTypeConn {
 				if event.Conn.Up {
-					fmt.Println("Got connection", event)
 					connected++
 				}
 			}
@@ -245,7 +243,6 @@ func (s *Simulator) LogEntries2PropagationLog(entries []*LogEntry) *simulation.L
 		ret.Timestamps = append(ret.Timestamps, int(ts))
 		ret.Indices = append(ret.Indices, links)
 		ret.Nodes = append(ret.Nodes, tsnodes[ts])
-		fmt.Println("Adding", ts*time.Millisecond, int(ts), links, tsnodes[ts])
 	}
 
 	return ret

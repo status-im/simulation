@@ -12,6 +12,7 @@ import (
 	"github.com/status-im/simulator/simulation"
 	"github.com/status-im/simulator/simulation/naivep2p"
 	"github.com/status-im/simulator/simulation/whisperv6"
+	"github.com/status-im/simulator/stats"
 )
 
 func main() {
@@ -55,8 +56,13 @@ func main() {
 
 	// Start simulation by sending single message
 	log.Printf("Starting message sending %s simulation for graph with %d nodes...", *simType, len(data.Nodes()))
-	sendData := sim.SendMessage(0, *ttl)
-	err = json.NewEncoder(fd).Encode(sendData)
+	plog := sim.SendMessage(0, *ttl)
+
+	// stats
+	ss := stats.Analyze(data, plog)
+	ss.PrintVerbose()
+
+	err = json.NewEncoder(fd).Encode(plog)
 	if err != nil {
 		log.Fatal(err)
 	}
