@@ -46,12 +46,12 @@ func NewSimulator(data *graph.Graph, N int, delay time.Duration) *Simulator {
 	return sim
 }
 
-// Stop stops simulator and frees all resources if any. Implements propagation.PropagationSimulator.
+// Stop stops simulator and frees all resources if any. Implements propagation.Simulator.
 func (s *Simulator) Stop() error {
 	return nil
 }
 
-// SendMessage sends single message and tracks propagation. Implements propagation.PropagationSimulator.
+// SendMessage sends single message and tracks propagation. Implements propagation.Simulator.
 func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	message := Message{
 		Content: "dummy",

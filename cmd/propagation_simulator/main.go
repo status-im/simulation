@@ -38,7 +38,7 @@ func main() {
 	}
 	defer fd.Close()
 
-	var sim propagation.PropagationSimulator
+	var sim propagation.Simulator
 	switch *simType {
 	case "naivep2p":
 		sim = naivep2p.NewSimulator(data, *naiveP2PN, *naiveP2PDelay)

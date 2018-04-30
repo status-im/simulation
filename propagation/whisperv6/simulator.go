@@ -18,7 +18,7 @@ import (
 )
 
 // Simulator simulates WhisperV6 message propagation through the
-// given p2p network. Implements PropagationSimulator interface.
+// given p2p network. Implements Simulator interface.
 type Simulator struct {
 	data     *graph.Graph
 	network  *simulations.Network
@@ -120,7 +120,7 @@ func (s *Simulator) Stop() error {
 	return nil
 }
 
-// SendMessage sends single message and tracks propagation. Implements propagation.PropagationSimulator.
+// SendMessage sends single message and tracks propagation. Implements propagation.Simulator.
 func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	node := s.network.Nodes[startNodeIdx]
 
