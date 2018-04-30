@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"v.io/x/ref/lib/stats/histogram"
+
 	"github.com/divan/graph-experiments/graph"
 	"github.com/status-im/simulator/simulation"
 )
@@ -13,6 +15,7 @@ type Stats struct {
 	NodeHits     map[string]int
 	NodeCoverage Coverage
 	LinkCoverage Coverage
+	Hist         *histogram.Histogram
 }
 
 // PrintVerbose prints detailed terminal-friendly stats to
@@ -21,18 +24,12 @@ func (s *Stats) PrintVerbose() {
 	fmt.Println("Stats:")
 	fmt.Println("Nodes coverage:", s.NodeCoverage)
 	fmt.Println("Links coverage:", s.LinkCoverage)
-	for k, v := range s.NodeHits {
-		fmt.Printf("%s: ", k)
-		for i := 0; i < v; i++ {
-			fmt.Printf(".")
-		}
-		fmt.Println()
-	}
+	fmt.Println("Node hits:", s.Hist.Value())
 }
 
 // Analyze analyzes given propagation log and returns filled Stats object.
 func Analyze(g *graph.Graph, plog *simulation.Log) *Stats {
-	nodeHits := analyzeNodeHits(g, plog)
+	nodeHits, hist := analyzeNodeHits(g, plog)
 	nodeCoverage := analyzeNodeCoverage(g, nodeHits)
 	linkCoverage := analyzeLinkCoverage(g, plog)
 
@@ -40,10 +37,11 @@ func Analyze(g *graph.Graph, plog *simulation.Log) *Stats {
 		NodeHits:     nodeHits,
 		NodeCoverage: nodeCoverage,
 		LinkCoverage: linkCoverage,
+		Hist:         hist,
 	}
 }
 
-func analyzeNodeHits(g *graph.Graph, plog *simulation.Log) map[string]int {
+func analyzeNodeHits(g *graph.Graph, plog *simulation.Log) (map[string]int, *histogram.Histogram) {
 	nodeHits := make(map[string]int)
 
 	for _, nodes := range plog.Nodes {
@@ -56,7 +54,12 @@ func analyzeNodeHits(g *graph.Graph, plog *simulation.Log) map[string]int {
 		}
 	}
 
-	return nodeHits
+	hist := NewHistogram(1, 1, 1)
+	for _, v := range nodeHits {
+		hist.Add(v)
+	}
+
+	return nodeHits, hist
 }
 
 func analyzeNodeCoverage(g *graph.Graph, nodeHits map[string]int) Coverage {
