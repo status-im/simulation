@@ -22,6 +22,8 @@ func (s *Stats) PrintVerbose() {
 	fmt.Println("Stats:")
 	fmt.Println("Nodes coverage:", s.NodeCoverage)
 	fmt.Println("Links coverage:", s.LinkCoverage)
+	fmt.Println("Histogram:")
+	s.Hist.Print()
 }
 
 // Analyze analyzes given propagation log and returns filled Stats object.
@@ -51,9 +53,17 @@ func analyzeNodeHits(g *graph.Graph, plog *propagation.Log) (map[string]int, *Hi
 		}
 	}
 
-	hist := NewHistogram(1, 1, 1)
-	for _, v := range nodeHits {
-		hist.Add(v, v)
+	hist := NewHistogram(HistogramOptions{
+		NumBuckets:   16,
+		GrowthFactor: 0.2,
+		MinValue:     1,
+	})
+	for key, v := range nodeHits {
+		fmt.Println("Node:", key, v)
+		err := hist.Add(int64(v))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return nodeHits, hist

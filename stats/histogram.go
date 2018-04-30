@@ -1,196 +1,189 @@
 package stats
 
 import (
-	"bytes"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
-	"sync"
+	"strings"
 )
 
-// Histogram implements simple histogram for node counters.
+// Histogram accumulates values in the form of a histogram with
+// exponentially increased bucket sizes.
 type Histogram struct {
-	ranges []int
-	counts []int
+	Count        int64
+	Sum          int64
+	SumOfSquares int64
+	Min          int64
+	Max          int64
+	Buckets      []HistogramBucket
 
-	totalCount int
-
-	TotalDataPoint int
-	MinDataPoint   int
-	MaxDataPoint   int
-
-	m sync.Mutex
+	opts                          HistogramOptions
+	logBaseBucketSize             float64
+	oneOverLogOnePlusGrowthFactor float64
 }
 
-// NewHistogram creates a new, ready to use Histogram.  The numBins
-// must be >= 2. The binFirst is the width of the first bin.  The
-// binGrowthFactor must be > 1.0 or 0.0.
-//
-// A special case of binGrowthFactor of 0.0 means the the allocated
-// bins will have constant, non-growing size or "width".
-func NewHistogram(
-	numBins int,
-	binFirst int,
-	binGrowthFactor float64) *Histogram {
-	gh := &Histogram{
-		ranges:       make([]int, numBins),
-		counts:       make([]int, numBins),
-		totalCount:   0,
-		MinDataPoint: math.MaxInt64,
-		MaxDataPoint: 0,
+// HistogramOptions contains the parameters that define the histogram's buckets.
+// The first bucket of the created histogram (with index 0) contains [min, min+n)
+// where n = BaseBucketSize, min = MinValue.
+// Bucket i (i>=1) contains [min + n * m^(i-1), min + n * m^i), where m = 1+GrowthFactor.
+// The type of the values is int64.
+type HistogramOptions struct {
+	// NumBuckets is the number of buckets.
+	NumBuckets int
+	// GrowthFactor is the growth factor of the buckets. A value of 0.1
+	// indicates that bucket N+1 will be 10% larger than bucket N.
+	GrowthFactor float64
+	// BaseBucketSize is the size of the first bucket.
+	BaseBucketSize float64
+	// MinValue is the lower bound of the first bucket.
+	MinValue int64
+}
+
+// HistogramBucket represents one histogram bucket.
+type HistogramBucket struct {
+	// LowBound is the lower bound of the bucket.
+	LowBound float64
+	// Count is the number of values in the bucket.
+	Count int64
+}
+
+// NewHistogram returns a pointer to a new Histogram object that was created
+// with the provided options.
+func NewHistogram(opts HistogramOptions) *Histogram {
+	if opts.NumBuckets == 0 {
+		opts.NumBuckets = 32
+	}
+	if opts.BaseBucketSize == 0.0 {
+		opts.BaseBucketSize = 1.0
+	}
+	h := Histogram{
+		Buckets: make([]HistogramBucket, opts.NumBuckets),
+		Min:     math.MaxInt64,
+		Max:     math.MinInt64,
+
+		opts:                          opts,
+		logBaseBucketSize:             math.Log(opts.BaseBucketSize),
+		oneOverLogOnePlusGrowthFactor: 1 / math.Log(1+opts.GrowthFactor),
+	}
+	m := 1.0 + opts.GrowthFactor
+	delta := opts.BaseBucketSize
+	h.Buckets[0].LowBound = float64(opts.MinValue)
+	for i := 1; i < opts.NumBuckets; i++ {
+		h.Buckets[i].LowBound = float64(opts.MinValue) + delta
+		delta = delta * m
+	}
+	return &h
+}
+
+// Print writes textual output of the histogram values.
+func (h *Histogram) Print() {
+	h.PrintWithUnit(1)
+}
+
+// PrintWithUnit writes textual output of the histogram values.
+// Data in histogram is divided by a Unit before print.
+func (h *Histogram) PrintWithUnit(unit float64) {
+	avg := float64(h.Sum) / float64(h.Count)
+	fmt.Printf("Count: %d  Min: %5.1f  Max: %5.1f  Avg: %.2f\n", h.Count, float64(h.Min)/unit, float64(h.Max)/unit, avg/unit)
+	fmt.Printf("%s\n", strings.Repeat("-", 60))
+	if h.Count <= 0 {
+		return
 	}
 
-	gh.ranges[0] = 0
-	gh.ranges[1] = binFirst
+	maxBucketDigitLen := len(strconv.FormatFloat(h.Buckets[len(h.Buckets)-1].LowBound, 'f', 6, 64))
+	if maxBucketDigitLen < 3 {
+		// For "inf".
+		maxBucketDigitLen = 3
+	}
+	maxCountDigitLen := len(strconv.FormatInt(h.Count, 10))
+	percentMulti := 100 / float64(h.Count)
 
-	for i := 2; i < len(gh.ranges); i++ {
-		if binGrowthFactor == 0.0 {
-			gh.ranges[i] = gh.ranges[i-1] + binFirst
+	accCount := int64(0)
+	for i, b := range h.Buckets {
+		fmt.Printf("[%*f, ", maxBucketDigitLen, b.LowBound/unit)
+		if i+1 < len(h.Buckets) {
+			fmt.Printf("%*f)", maxBucketDigitLen, h.Buckets[i+1].LowBound/unit)
 		} else {
-			gh.ranges[i] =
-				int(math.Ceil(binGrowthFactor * float64(gh.ranges[i-1])))
+			fmt.Printf("%*s)", maxBucketDigitLen, "inf")
 		}
-	}
 
-	return gh
+		accCount += b.Count
+		fmt.Printf("  %*d  %5.1f%%  %5.1f%%", maxCountDigitLen, b.Count, float64(b.Count)*percentMulti, float64(accCount)*percentMulti)
+
+		const barScale = 0.1
+		barLength := int(float64(b.Count)*percentMulti*barScale + 0.5)
+		fmt.Printf("  %s\n", strings.Repeat("#", barLength))
+	}
 }
 
-// Add increases the count in the bin for the given dataPoint.
-func (gh *Histogram) Add(dataPoint int, count int) {
-	gh.m.Lock()
-
-	idx := search(gh.ranges, dataPoint)
-	if idx >= 0 {
-		gh.counts[idx] += count
-		gh.totalCount += count
-
-		gh.TotalDataPoint += dataPoint
-		if gh.MinDataPoint > dataPoint {
-			gh.MinDataPoint = dataPoint
-		}
-		if gh.MaxDataPoint < dataPoint {
-			gh.MaxDataPoint = dataPoint
-		}
+// Clear resets all the content of histogram.
+func (h *Histogram) Clear() {
+	h.Count = 0
+	h.Sum = 0
+	h.SumOfSquares = 0
+	h.Min = math.MaxInt64
+	h.Max = math.MinInt64
+	for i := range h.Buckets {
+		h.Buckets[i].Count = 0
 	}
-
-	gh.m.Unlock()
 }
 
-// Finds the last arr index where the arr entry <= dataPoint.
-func search(arr []int, dataPoint int) int {
-	i, j := 0, len(arr)
-
-	for i < j {
-		h := i + (j-i)/2 // Avoids h overflow, where i <= h < j.
-		if dataPoint >= arr[h] {
-			i = h + 1
-		} else {
-			j = h
-		}
-	}
-
-	return i - 1
+// Opts returns a copy of the options used to create the Histogram.
+func (h *Histogram) Opts() HistogramOptions {
+	return h.opts
 }
 
-// AddAll adds all the counts from the src histogram into this
-// histogram.  The src and this histogram must either have the same
-// exact creation parameters.
-func (gh *Histogram) AddAll(src *Histogram) {
-	src.m.Lock()
-	gh.m.Lock()
-
-	for i := 0; i < len(src.counts); i++ {
-		gh.counts[i] += src.counts[i]
+// Add adds a value to the histogram.
+func (h *Histogram) Add(value int64) error {
+	bucket, err := h.findBucket(value)
+	if err != nil {
+		return err
 	}
-	gh.totalCount += src.totalCount
-
-	gh.TotalDataPoint += src.TotalDataPoint
-	if gh.MinDataPoint > src.MinDataPoint {
-		gh.MinDataPoint = src.MinDataPoint
+	h.Buckets[bucket].Count++
+	h.Count++
+	h.Sum += value
+	h.SumOfSquares += value * value
+	if value < h.Min {
+		h.Min = value
 	}
-	if gh.MaxDataPoint < src.MaxDataPoint {
-		gh.MaxDataPoint = src.MaxDataPoint
+	if value > h.Max {
+		h.Max = value
 	}
-
-	gh.m.Unlock()
-	src.m.Unlock()
+	return nil
 }
 
-// Graph emits an ascii graph to the optional out buffer, allocating a
-// out buffer if none was supplied.  Returns the out buffer.  Each
-// line emitted may have an optional prefix.
-//
-// For example:
-//       0+  10=2 10.00% ********
-//      10+  10=1 10.00% ****
-//      20+  10=3 10.00% ************
-func (gh *Histogram) EmitGraph(prefix []byte,
-	out *bytes.Buffer) *bytes.Buffer {
-	gh.m.Lock()
-
-	ranges := gh.ranges
-	rangesN := len(ranges)
-	counts := gh.counts
-	countsN := len(counts)
-
-	if out == nil {
-		out = bytes.NewBuffer(make([]byte, 0, 80*countsN))
+func (h *Histogram) findBucket(value int64) (int, error) {
+	delta := float64(value - h.opts.MinValue)
+	var b int
+	if delta >= h.opts.BaseBucketSize {
+		// b = log_{1+growthFactor} (delta / baseBucketSize) + 1
+		//   = log(delta / baseBucketSize) / log(1+growthFactor) + 1
+		//   = (log(delta) - log(baseBucketSize)) * (1 / log(1+growthFactor)) + 1
+		b = int((math.Log(delta)-h.logBaseBucketSize)*h.oneOverLogOnePlusGrowthFactor + 1)
 	}
-
-	var maxCount int
-	for _, c := range counts {
-		if maxCount < c {
-			maxCount = c
-		}
+	if b >= len(h.Buckets) {
+		return 0, fmt.Errorf("no bucket for value: %d", value)
 	}
-	maxCountF := float64(maxCount)
-	totCountF := float64(gh.totalCount)
-
-	widthRange := len(strconv.Itoa(int(ranges[rangesN-1])))
-	widthWidth := len(strconv.Itoa(int(ranges[rangesN-1] - ranges[rangesN-2])))
-	widthCount := len(strconv.Itoa(int(maxCount)))
-
-	// Each line looks like: "[prefix]START+WIDTH=COUNT PCT% BAR\n"
-	f := fmt.Sprintf("%%%dd+%%%dd=%%%dd%% 7.2f%%%%",
-		widthRange, widthWidth, widthCount)
-
-	var runCount int // Running total while emitting lines.
-
-	barLen := float64(len(bar))
-
-	for i, c := range counts {
-		if prefix != nil {
-			out.Write(prefix)
-		}
-
-		var width int
-		if i < countsN-1 {
-			width = int(ranges[i+1] - ranges[i])
-		}
-
-		runCount += c
-		fmt.Fprintf(out, f, ranges[i], width, c,
-			100.0*(float64(runCount)/totCountF))
-
-		if c > 0 {
-			out.Write([]byte(" "))
-			barWant := int(math.Floor(barLen * (float64(c) / maxCountF)))
-			out.Write(bar[0:barWant])
-		}
-
-		out.Write([]byte("\n"))
-	}
-
-	gh.m.Unlock()
-
-	return out
+	return b, nil
 }
 
-var bar = []byte("******************************")
-
-// CallSync invokes the callback func while the histogram is locked.
-func (gh *Histogram) CallSync(f func()) {
-	gh.m.Lock()
-	f()
-	gh.m.Unlock()
+// Merge takes another histogram h2, and merges its content into h.
+// The two histograms must be created by equivalent HistogramOptions.
+func (h *Histogram) Merge(h2 *Histogram) {
+	if h.opts != h2.opts {
+		log.Fatalf("failed to merge histograms, created by inequivalent options")
+	}
+	h.Count += h2.Count
+	h.Sum += h2.Sum
+	h.SumOfSquares += h2.SumOfSquares
+	if h2.Min < h.Min {
+		h.Min = h2.Min
+	}
+	if h2.Max > h.Max {
+		h.Max = h2.Max
+	}
+	for i, b := range h2.Buckets {
+		h.Buckets[i].Count += b.Count
+	}
 }
