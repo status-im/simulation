@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/status-im/simulator/simulation"
+	"github.com/status-im/simulator/propagation"
 )
 
 // LogEntry defines the reporting log entry for one
@@ -30,10 +30,10 @@ func NewLogEntry(start time.Time, from, to int) LogEntry {
 	}
 }
 
-// LogEntries2PropagationLog converts raw slice of LogEntries to PropagationLog,
+// logEntries2PropagationLog converts raw slice of LogEntries to PropagationLog,
 // aggregating by timestamps and converting nodes indices to link indices.
 // We expect that timestamps already bucketed into Nms groups.
-func (s *Simulator) LogEntries2PropagationLog(entries []*LogEntry) *simulation.Log {
+func (s *Simulator) logEntries2PropagationLog(entries []*LogEntry) *propagation.Log {
 	findLink := func(from, to int) int {
 		links := s.data.Links()
 		for i := range links {
@@ -72,7 +72,7 @@ func (s *Simulator) LogEntries2PropagationLog(entries []*LogEntry) *simulation.L
 		tsnodes[entry.Ts] = nnodes
 	}
 
-	var ret = &simulation.Log{
+	var ret = &propagation.Log{
 		Timestamps: make([]int, 0, len(tss)),
 		Indices:    make([][]int, 0, len(tss)),
 		Nodes:      make([][]int, 0, len(tss)),

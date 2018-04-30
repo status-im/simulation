@@ -5,22 +5,22 @@ import (
 	"time"
 )
 
-// LogEntry defines the reporting log entry for one
+// logEntry defines the reporting log entry for one
 // p2p message sending.
-type LogEntry struct {
+type logEntry struct {
 	From int
 	To   int
 	Ts   time.Duration
 }
 
-// String implements Stringer interface for LogEntry.
-func (l LogEntry) String() string {
+// String implements Stringer interface for logEntry.
+func (l logEntry) String() string {
 	return fmt.Sprintf("%s: %d -> %d", l.Ts.String(), l.From, l.To)
 }
 
-// NewLogEntry creates new log entry.
-func NewLogEntry(start time.Time, from, to int) *LogEntry {
-	return &LogEntry{
+// newlogEntry creates new log entry.
+func newlogEntry(start time.Time, from, to int) *logEntry {
+	return &logEntry{
 		Ts:   time.Since(start) / time.Millisecond,
 		From: from,
 		To:   to,

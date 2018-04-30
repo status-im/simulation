@@ -9,9 +9,9 @@ import (
 
 	"github.com/divan/graph-experiments/graph"
 	gethlog "github.com/ethereum/go-ethereum/log"
-	"github.com/status-im/simulator/simulation"
-	"github.com/status-im/simulator/simulation/naivep2p"
-	"github.com/status-im/simulator/simulation/whisperv6"
+	"github.com/status-im/simulator/propagation"
+	"github.com/status-im/simulator/propagation/naivep2p"
+	"github.com/status-im/simulator/propagation/whisperv6"
 	"github.com/status-im/simulator/stats"
 )
 
@@ -38,7 +38,7 @@ func main() {
 	}
 	defer fd.Close()
 
-	var sim simulation.Simulator
+	var sim propagation.PropagationSimulator
 	switch *simType {
 	case "naivep2p":
 		sim = naivep2p.NewSimulator(data, *naiveP2PN, *naiveP2PDelay)

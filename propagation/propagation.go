@@ -1,7 +1,7 @@
-package simulation
+package propagation
 
-// Simulator defines the simulators for message propagation within the graph.
-type Simulator interface {
+// PropagationSimulator defines the simulators for message propagation within the graph.
+type PropagationSimulator interface {
 	SendMessage(idx, ttl int) *Log
 	Stop() error
 }

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/divan/graph-experiments/graph"
-	"github.com/status-im/simulator/simulation"
+	"github.com/status-im/simulator/propagation"
 )
 
 // Simulator is responsible for running propagation simulation.
@@ -46,12 +46,13 @@ func NewSimulator(data *graph.Graph, N int, delay time.Duration) *Simulator {
 	return sim
 }
 
-// Stop stops simulator and frees all resources if any.
+// Stop stops simulator and frees all resources if any. Implements propagation.PropagationSimulator.
 func (s *Simulator) Stop() error {
 	return nil
 }
 
-func (s *Simulator) SendMessage(startNodeIdx, ttl int) *simulation.Log {
+// SendMessage sends single message and tracks propagation. Implements propagation.PropagationSimulator.
+func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	message := Message{
 		Content: "dummy",
 		TTL:     ttl,
@@ -71,7 +72,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *simulation.Log {
 		case val := <-s.reportCh:
 			ret = append(ret, &val)
 		case <-done:
-			return s.LogEntries2PropagationLog(ret)
+			return s.logEntries2PropagationLog(ret)
 		}
 	}
 }

@@ -14,11 +14,11 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/simulations"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
-	"github.com/status-im/simulator/simulation"
+	"github.com/status-im/simulator/propagation"
 )
 
 // Simulator simulates WhisperV6 message propagation through the
-// given p2p network.
+// given p2p network. Implements PropagationSimulator interface.
 type Simulator struct {
 	data     *graph.Graph
 	network  *simulations.Network
@@ -26,6 +26,7 @@ type Simulator struct {
 }
 
 // NewSimulator intializes simulator for the given graph data.
+// It uses defaults for PoW settings.
 func NewSimulator(data *graph.Graph) *Simulator {
 	rand.Seed(time.Now().UnixNano())
 
@@ -119,8 +120,8 @@ func (s *Simulator) Stop() error {
 	return nil
 }
 
-// SendMessage sends single message and tracks propagation. Implements simulator.Interface.
-func (s *Simulator) SendMessage(startNodeIdx, ttl int) *simulation.Log {
+// SendMessage sends single message and tracks propagation. Implements propagation.PropagationSimulator.
+func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	node := s.network.Nodes[startNodeIdx]
 
 	// the easiest way to send a message through the node is
@@ -160,7 +161,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *simulation.Log {
 		subErr error
 		done   bool
 		count  int
-		plog   []*LogEntry
+		plog   []*logEntry
 	)
 	for subErr == nil && !done {
 		select {
@@ -170,7 +171,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *simulation.Log {
 				if msg.Code == 1 && msg.Protocol == "shh" && msg.Received == false {
 					from := ncache[msg.One]
 					to := ncache[msg.Other]
-					entry := NewLogEntry(start, from, to)
+					entry := newlogEntry(start, from, to)
 					plog = append(plog, entry)
 					count++
 				}
@@ -188,13 +189,13 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *simulation.Log {
 	if subErr != nil {
 		log.Fatal("Failed to collect propagation info", subErr)
 	}
-	return s.LogEntries2PropagationLog(plog)
+	return s.logEntries2PropagationLog(plog)
 }
 
-// LogEntries2PropagationLog converts raw slice of LogEntries to PropagationLog,
+// logEntries2PropagationLog converts raw slice of LogEntries to PropagationLog,
 // aggregating by timestamps and converting nodes indices to link indices.
 // We expect that timestamps already bucketed into Nms groups.
-func (s *Simulator) LogEntries2PropagationLog(entries []*LogEntry) *simulation.Log {
+func (s *Simulator) logEntries2PropagationLog(entries []*logEntry) *propagation.Log {
 	links := s.data.Links()
 	findLink := func(from, to int) int {
 		for i := range links {
@@ -233,7 +234,7 @@ func (s *Simulator) LogEntries2PropagationLog(entries []*LogEntry) *simulation.L
 		tsnodes[entry.Ts] = nnodes
 	}
 
-	var ret = &simulation.Log{
+	var ret = &propagation.Log{
 		Timestamps: make([]int, 0, len(tss)),
 		Indices:    make([][]int, 0, len(tss)),
 		Nodes:      make([][]int, 0, len(tss)),
