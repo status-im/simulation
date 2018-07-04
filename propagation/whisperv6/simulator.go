@@ -59,7 +59,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	for i := 0; i < nodeCount; i++ {
 		node, err := sim.network.NewNodeWithConfig(nodeConfig(i))
 		if err != nil {
-			panic(err)
+			log.Fatal("[ERROR] Can't start node: ", err)
 		}
 		// it's important to init whisper service here, as it
 		// be initialized for each peer
@@ -69,7 +69,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 
 	log.Println("Starting nodes...")
 	if err := network.StartAll(); err != nil {
-		panic(err)
+		log.Fatal("[ERROR] Can't start nodes: ", err)
 	}
 
 	// subscribing to network events
@@ -87,7 +87,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 				continue
 			}
 			if err := network.Connect(node1.ID(), node2.ID()); err != nil {
-				panic(err)
+				log.Fatal("[ERROR] Can't connect nodes: ", err)
 			}
 		}
 	}()
@@ -164,10 +164,10 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	}
 
 	var (
-		subErr error
-		done   bool
-		count  int
-		plog   []*logEntry
+		subErr          error
+		done, hasEvents bool
+		count           int
+		plog            []*logEntry
 	)
 	for subErr == nil && !done {
 		select {
@@ -179,7 +179,9 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 					to := ncache[msg.Other]
 					entry := newlogEntry(start, from, to)
 					plog = append(plog, entry)
+
 					count++
+					hasEvents = true
 				}
 			}
 		case <-ticker.C:
@@ -193,8 +195,12 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 		}
 	}
 	if subErr != nil {
-		log.Fatal("Failed to collect propagation info", subErr)
+		log.Fatal("[ERROR] Failed to collect propagation info", subErr)
 	}
+	if !hasEvents {
+		log.Fatal("[ERROR] Didn't get any events, something wrong with simulator.")
+	}
+
 	return s.logEntries2PropagationLog(plog)
 }
 
@@ -259,7 +265,7 @@ func (s *Simulator) logEntries2PropagationLog(entries []*logEntry) *propagation.
 func nodeConfig(idx int) *adapters.NodeConfig {
 	key, err := crypto.GenerateKey()
 	if err != nil {
-		panic("unable to generate key")
+		log.Fatal("[ERROR] Can't generate key: ", err)
 	}
 	var id discover.NodeID
 	pubkey := crypto.FromECDSAPub(&key.PublicKey)
