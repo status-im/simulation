@@ -138,6 +138,9 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	rand.Read(symKey)
 
 	err = client.Call(&symkeyID, "shh_addSymKey", hexutil.Bytes(symKey))
+	if err != nil {
+		log.Fatal("Failed adding new symmetric key: ", err)
+	}
 
 	// subscribing to network events
 	events := make(chan *simulations.Event)
@@ -150,6 +153,9 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	msg := generateMessage(ttl, symkeyID)
 	var ignored bool
 	err = client.Call(&ignored, "shh_post", msg)
+	if err != nil {
+		log.Fatal("Failed sending new post message: ", err)
+	}
 
 	// pre-cache node indexes
 	var ncache = make(map[discover.NodeID]int)
