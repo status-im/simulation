@@ -151,7 +151,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	start := time.Now()
 
 	msg := generateMessage(ttl, symkeyID)
-	var ignored bool
+	var ignored string
 	err = client.Call(&ignored, "shh_post", msg)
 	if err != nil {
 		log.Fatal("Failed sending new post message: ", err)
