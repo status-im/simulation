@@ -271,9 +271,10 @@ func nodeConfig(idx int) *adapters.NodeConfig {
 	pubkey := crypto.FromECDSAPub(&key.PublicKey)
 	copy(id[:], pubkey[1:])
 	return &adapters.NodeConfig{
-		ID:         id,
-		PrivateKey: key,
-		Name:       nodeIdxToName(idx),
+		ID:              id,
+		PrivateKey:      key,
+		Name:            nodeIdxToName(idx),
+		EnableMsgEvents: true,
 	}
 }
 
