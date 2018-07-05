@@ -3,6 +3,7 @@ package stats
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/divan/graph-experiments/graph"
 	"github.com/status-im/simulator/propagation"
@@ -14,12 +15,14 @@ type Stats struct {
 	NodeCoverage Coverage
 	LinkCoverage Coverage
 	Hist         *Histogram
+	Time         time.Duration
 }
 
 // PrintVerbose prints detailed terminal-friendly stats to
 // the console.
 func (s *Stats) PrintVerbose() {
 	fmt.Println("Stats:")
+	fmt.Println("Time elapsed:", s.Time)
 	fmt.Println("Nodes coverage:", s.NodeCoverage)
 	fmt.Println("Links coverage:", s.LinkCoverage)
 	fmt.Println("Histogram:")
@@ -28,6 +31,7 @@ func (s *Stats) PrintVerbose() {
 
 // Analyze analyzes given propagation log and returns filled Stats object.
 func Analyze(g *graph.Graph, plog *propagation.Log) *Stats {
+	t := analyzeTiming(plog)
 	nodeHits, hist := analyzeNodeHits(g, plog)
 	nodeCoverage := analyzeNodeCoverage(g, nodeHits)
 	linkCoverage := analyzeLinkCoverage(g, plog)
@@ -37,6 +41,7 @@ func Analyze(g *graph.Graph, plog *propagation.Log) *Stats {
 		NodeCoverage: nodeCoverage,
 		LinkCoverage: linkCoverage,
 		Hist:         hist,
+		Time:         t,
 	}
 }
 
@@ -86,4 +91,17 @@ func analyzeLinkCoverage(g *graph.Graph, plog *propagation.Log) Coverage {
 	actual := len(linkHits)
 	total := len(g.Links())
 	return NewCoverage(actual, total)
+}
+
+// analyzeTiming returns the amount of time the simulation took.
+func analyzeTiming(plog *propagation.Log) time.Duration {
+	// log contains timestamps in milliseconds, so the
+	// max value will be our number
+	var max int
+	for _, ts := range plog.Timestamps {
+		if ts > max {
+			max = ts
+		}
+	}
+	return time.Duration(max) * time.Millisecond
 }
