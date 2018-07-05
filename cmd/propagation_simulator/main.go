@@ -9,10 +9,10 @@ import (
 
 	"github.com/divan/graph-experiments/graph"
 	gethlog "github.com/ethereum/go-ethereum/log"
-	"github.com/status-im/simulator/propagation"
-	"github.com/status-im/simulator/propagation/naivep2p"
-	"github.com/status-im/simulator/propagation/whisperv6"
-	"github.com/status-im/simulator/stats"
+	"github.com/status-im/simulation/propagation"
+	"github.com/status-im/simulation/propagation/naivep2p"
+	"github.com/status-im/simulation/propagation/whisperv6"
+	"github.com/status-im/simulation/stats"
 )
 
 func main() {

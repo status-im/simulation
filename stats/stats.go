@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/divan/graph-experiments/graph"
-	"github.com/status-im/simulator/propagation"
+	"github.com/status-im/simulation/propagation"
 )
 
 // Stats represents stats data for given simulation log.

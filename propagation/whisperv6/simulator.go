@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/simulations"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
-	"github.com/status-im/simulator/propagation"
+	"github.com/status-im/simulation/propagation"
 )
 
 // Simulator simulates WhisperV6 message propagation through the

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/status-im/simulator/propagation"
+	"github.com/status-im/simulation/propagation"
 )
 
 // LogEntry defines the reporting log entry for one

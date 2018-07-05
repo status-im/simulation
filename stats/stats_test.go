@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/divan/graph-experiments/graph"
-	"github.com/status-im/simulator/simulation"
+	"github.com/status-im/simulation/simulation"
 )
 
 // node implements string-only graph.Node
