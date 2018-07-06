@@ -147,7 +147,6 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	sub := s.network.Events().Subscribe(events)
 	defer sub.Unsubscribe()
 
-	ticker := time.NewTicker(500 * time.Millisecond)
 	start := time.Now()
 
 	msg := generateMessage(ttl, symkeyID)
@@ -163,10 +162,11 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 		ncache[s.network.Nodes[i].ID()] = i
 	}
 
+	timer := time.NewTimer(time.Duration(ttl) * time.Second)
+	defer timer.Stop()
 	var (
 		subErr          error
 		done, hasEvents bool
-		count           int
 		plog            []*logEntry
 	)
 	for subErr == nil && !done {
@@ -180,16 +180,11 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 					entry := newlogEntry(start, from, to)
 					plog = append(plog, entry)
 
-					count++
 					hasEvents = true
 				}
 			}
-		case <-ticker.C:
-			if count == 0 {
-				done = true
-			} else {
-				count = 0
-			}
+		case <-timer.C:
+			done = true
 		case e := <-sub.Err():
 			subErr = e
 		}
