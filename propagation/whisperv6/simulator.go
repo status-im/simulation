@@ -1,6 +1,7 @@
 package whisperv6
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -24,6 +25,8 @@ type Simulator struct {
 	network  *simulations.Network
 	whispers map[discover.NodeID]*whisper.Whisper
 }
+
+var ErrLinkExists = errors.New("link exists")
 
 // NewSimulator intializes simulator for the given graph data.
 // It uses defaults for PoW settings.
@@ -80,7 +83,10 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	go func() {
 		log.Println("Connecting nodes...")
 		for _, link := range data.Links() {
-			sim.connectNodes(link.From, link.To)
+			err := sim.connectNodes(link.From, link.To)
+			if err != nil && err != ErrLinkExists {
+				log.Fatalf("[ERROR] Can't connect nodes %d and %d: %s", link.From, link.To, err)
+			}
 		}
 	}()
 
@@ -285,7 +291,7 @@ func (sim *Simulator) connectNodes(from, to int) error {
 	node2 := sim.network.Nodes[to]
 	// if connection already exists, skip it, as network.Connect will fail
 	if sim.network.GetConn(node1.ID(), node2.ID()) != nil {
-		return fmt.Errorf("link exists")
+		return ErrLinkExists
 	}
 	return sim.network.Connect(node1.ID(), node2.ID())
 }
