@@ -280,7 +280,7 @@ func findNode(nodes []graph.Node, ID string) (int, error) {
 	return -1, fmt.Errorf("Node with ID '%s' not found", ID)
 }
 
-func (sim *Simulator) connectNodes(from, to string) error {
+func (sim *Simulator) connectNodes(from, to int) error {
 	node1 := sim.network.Nodes[from]
 	node2 := sim.network.Nodes[to]
 	// if connection already exists, skip it, as network.Connect will fail
