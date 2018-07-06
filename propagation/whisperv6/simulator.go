@@ -80,15 +80,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	go func() {
 		log.Println("Connecting nodes...")
 		for _, link := range data.Links() {
-			node1 := sim.network.Nodes[link.From]
-			node2 := sim.network.Nodes[link.To]
-			// if connection already exists, skip it, as network.Connect will fail
-			if network.GetConn(node1.ID(), node2.ID()) != nil {
-				continue
-			}
-			if err := network.Connect(node1.ID(), node2.ID()); err != nil {
-				log.Fatal("[ERROR] Can't connect nodes: ", err)
-			}
+			sim.connectNodes(link.From, link.To)
 		}
 	}()
 
@@ -286,4 +278,14 @@ func findNode(nodes []graph.Node, ID string) (int, error) {
 		}
 	}
 	return -1, fmt.Errorf("Node with ID '%s' not found", ID)
+}
+
+func (sim *Simulator) connectNodes(from, to string) error {
+	node1 := sim.network.Nodes[from]
+	node2 := sim.network.Nodes[to]
+	// if connection already exists, skip it, as network.Connect will fail
+	if sim.network.GetConn(node1.ID(), node2.ID()) != nil {
+		return fmt.Errorf("link exists")
+	}
+	return sim.network.Connect(node1.ID(), node2.ID())
 }
