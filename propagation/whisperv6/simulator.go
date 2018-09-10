@@ -80,12 +80,15 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	sub := sim.network.Events().Subscribe(events)
 	defer sub.Unsubscribe()
 
+	count := 0
 	go func() {
 		log.Println("Connecting nodes...")
 		for _, link := range data.Links() {
 			err := sim.connectNodes(link.From, link.To)
 			if err != nil && err != ErrLinkExists {
 				log.Fatalf("[ERROR] Can't connect nodes %d and %d: %s", link.From, link.To, err)
+			} else if err == nil {
+				count++
 			}
 		}
 	}()
@@ -93,7 +96,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	// wait for all nodes to establish connections
 	var connected int
 	var subErr error
-	for connected < len(data.Links()) && subErr == nil {
+	for connected < count && subErr == nil {
 		select {
 		case event := <-events:
 			if event.Type == simulations.EventTypeConn {
