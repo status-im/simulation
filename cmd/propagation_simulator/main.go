@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/divan/graph-experiments/graph"
+	"github.com/divan/graphx/formats"
 	gethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/status-im/simulation/propagation"
 	"github.com/status-im/simulation/propagation/naivep2p"
@@ -27,7 +27,7 @@ func main() {
 	)
 	flag.Parse()
 
-	data, err := graph.NewGraphFromJSON(*input)
+	data, err := formats.FromD3JSON(*input)
 	if err != nil {
 		log.Fatal("Opening input file failed: ", err)
 	}

@@ -3,8 +3,8 @@ package stats
 import (
 	"testing"
 
-	"github.com/divan/graph-experiments/graph"
-	"github.com/status-im/simulation/simulation"
+	"github.com/divan/graphx/graph"
+	"github.com/status-im/simulation/propagation"
 )
 
 // node implements string-only graph.Node
@@ -19,15 +19,15 @@ func TestAnalyze(t *testing.T) {
 	g.AddNode(node("2"))
 	g.AddNode(node("3"))
 
-	g.AddLink(0, 1)
-	g.AddLink(1, 2)
-	g.AddLink(2, 0)
-	g.AddLink(0, 3)
+	g.AddLink("0", "1")
+	g.AddLink("1", "2")
+	g.AddLink("2", "0")
+	g.AddLink("0", "3")
 
 	// example propagation log
 	// three timestamps: 10, 20 and 30 ms
 	// with first node hit 1 time, second and third - 3 times
-	plog := &simulation.Log{
+	plog := &propagation.Log{
 		Timestamps: []int{10, 20, 30},
 		Nodes: [][]int{
 			[]int{0, 1, 2},

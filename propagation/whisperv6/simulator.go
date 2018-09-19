@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/divan/graph-experiments/graph"
+	"github.com/divan/graphx/graph"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/node"
@@ -84,9 +84,9 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	go func() {
 		log.Println("Connecting nodes...")
 		for _, link := range data.Links() {
-			err := sim.connectNodes(link.From, link.To)
+			err := sim.connectNodes(link.FromIdx(), link.ToIdx())
 			if err != nil && err != ErrLinkExists {
-				log.Fatalf("[ERROR] Can't connect nodes %d and %d: %s", link.From, link.To, err)
+				log.Fatalf("[ERROR] Can't connect nodes %s and %s: %s", link.From(), link.To(), err)
 			} else if err == nil {
 				count++
 			}
@@ -204,22 +204,11 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 // aggregating by timestamps and converting nodes indices to link indices.
 // We expect that timestamps already bucketed into Nms groups.
 func (s *Simulator) logEntries2PropagationLog(entries []*logEntry) *propagation.Log {
-	links := s.data.Links()
-	findLink := func(from, to int) int {
-		for i := range links {
-			if links[i].From == from && links[i].To == to ||
-				links[i].To == from && links[i].From == to {
-				return i
-			}
-		}
-		return -1
-	}
-
 	tss := make(map[time.Duration][]int)
 	tsnodes := make(map[time.Duration][]int)
 	for _, entry := range entries {
-		idx := findLink(entry.From, entry.To)
-		if idx == -1 {
+		idx, err := s.data.LinkByIndices(entry.From, entry.To)
+		if err != nil {
 			log.Println("[EE] Wrong link", entry)
 			continue
 		}
@@ -286,12 +275,19 @@ func findNode(nodes []graph.Node, ID string) (int, error) {
 			return i, nil
 		}
 	}
-	return -1, fmt.Errorf("Node with ID '%s' not found", ID)
+	return -1, fmt.Errorf("node with ID '%s' not found", ID)
 }
 
 func (sim *Simulator) connectNodes(from, to int) error {
+	// TODO(divan): check if we have IDs in from/to strings
 	node1 := sim.network.Nodes[from]
+	if node1 == nil {
+		return fmt.Errorf("node with ID '%v' not found", from)
+	}
 	node2 := sim.network.Nodes[to]
+	if node2 == nil {
+		return fmt.Errorf("node with ID '%v' not found", to)
+	}
 	// if connection already exists, skip it, as network.Connect will fail
 	if sim.network.GetConn(node1.ID(), node2.ID()) != nil {
 		return ErrLinkExists

@@ -26,3 +26,14 @@ func newlogEntry(start time.Time, from, to int) *logEntry {
 		To:   to,
 	}
 }
+
+/*
+// newlogEntry creates new log entry.
+func newlogEntry(start time.Time, from, to int) *logEntry {
+	return &logEntry{
+		Ts:   time.Since(start) / time.Millisecond,
+		From: from,
+		To:   to,
+	}
+}
+*/

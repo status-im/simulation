@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/divan/graph-experiments/graph"
+	"github.com/divan/graphx/graph"
 	"github.com/status-im/simulation/propagation"
 )
 

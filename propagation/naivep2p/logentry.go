@@ -37,8 +37,8 @@ func (s *Simulator) logEntries2PropagationLog(entries []*LogEntry) *propagation.
 	findLink := func(from, to int) int {
 		links := s.data.Links()
 		for i := range links {
-			if links[i].From == from && links[i].To == to ||
-				links[i].To == from && links[i].From == to {
+			if links[i].FromIdx() == from && links[i].ToIdx() == to ||
+				links[i].ToIdx() == from && links[i].FromIdx() == to {
 				return i
 			}
 		}
