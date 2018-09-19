@@ -25,7 +25,7 @@ func main() {
 
 	if *server {
 		log.Println("Starting simulator server on", *serverAddr)
-		http.HandleFunc("/", simulationHandler)
+		http.HandleFunc("/", allowCORS(simulationHandler))
 		log.Fatal(http.ListenAndServe(*serverAddr, nil))
 		return
 	}
