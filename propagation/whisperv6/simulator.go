@@ -1,6 +1,7 @@
 package whisperv6
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"log"
@@ -11,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/simulations"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
@@ -23,7 +24,7 @@ import (
 type Simulator struct {
 	data     *graph.Graph
 	network  *simulations.Network
-	whispers map[discover.NodeID]*whisper.Whisper
+	whispers map[enode.ID]*whisper.Whisper
 }
 
 var ErrLinkExists = errors.New("link exists")
@@ -38,13 +39,12 @@ func NewSimulator(data *graph.Graph) *Simulator {
 		MinimumAcceptedPOW: 0.001,
 	}
 
-	whispers := make(map[discover.NodeID]*whisper.Whisper, len(data.Nodes()))
+	whispers := make(map[enode.ID]*whisper.Whisper, len(data.Nodes()))
 	services := map[string]adapters.ServiceFunc{
 		"shh": func(ctx *adapters.ServiceContext) (node.Service, error) {
 			return whispers[ctx.Config.ID], nil
 		},
 	}
-	adapters.RegisterServices(services)
 
 	adapter := adapters.NewSimAdapter(services)
 	network := simulations.NewNetwork(adapter, &simulations.NetworkConfig{
@@ -118,6 +118,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 func (s *Simulator) Stop() error {
 	log.Println("Shutting down simulation nodes...")
 	s.network.Shutdown()
+
 	return nil
 }
 
@@ -158,7 +159,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	}
 
 	// pre-cache node indexes
-	var ncache = make(map[discover.NodeID]int)
+	var ncache = make(map[enode.ID]int)
 	for i := range s.network.Nodes {
 		ncache[s.network.Nodes[i].ID()] = i
 	}
@@ -252,9 +253,7 @@ func nodeConfig(idx int) *adapters.NodeConfig {
 	if err != nil {
 		log.Fatal("[ERROR] Can't generate key: ", err)
 	}
-	var id discover.NodeID
-	pubkey := crypto.FromECDSAPub(&key.PublicKey)
-	copy(id[:], pubkey[1:])
+	id := pubkeyToID(&key.PublicKey)
 	return &adapters.NodeConfig{
 		ID:              id,
 		PrivateKey:      key,
@@ -263,19 +262,12 @@ func nodeConfig(idx int) *adapters.NodeConfig {
 	}
 }
 
-func nodeIdxToName(id int) string {
-	return fmt.Sprintf("Node %d", id)
+func pubkeyToID(key *ecdsa.PublicKey) enode.ID {
+	return enode.PubkeyToIDV4(key)
 }
 
-// findNode is a helper for finding node index by it's ID.
-// TODO: remove this when links replaces into indexes.
-func findNode(nodes []graph.Node, ID string) (int, error) {
-	for i := range nodes {
-		if nodes[i].ID() == ID {
-			return i, nil
-		}
-	}
-	return -1, fmt.Errorf("node with ID '%s' not found", ID)
+func nodeIdxToName(id int) string {
+	return fmt.Sprintf("Node %d", id)
 }
 
 func (sim *Simulator) connectNodes(from, to int) error {
