@@ -41,8 +41,6 @@ func main() {
 	defer sim.Stop()
 	sim.WriteOutputToFile(*output)
 
-	defer sim.Stop()
-
 	// stats
 	ss := stats.Analyze(data, sim.plog)
 	ss.PrintVerbose()
