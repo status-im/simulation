@@ -2,19 +2,16 @@ package stats
 
 import (
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/divan/graphx/graph"
 	"github.com/status-im/simulation/propagation"
 )
 
 // Stats represents stats data for given simulation log.
 type Stats struct {
-	NodeHits     map[string]int
+	NodeHits     map[int]int
 	NodeCoverage Coverage
 	LinkCoverage Coverage
-	Hist         *Histogram
 	Time         time.Duration
 }
 
@@ -25,62 +22,41 @@ func (s *Stats) PrintVerbose() {
 	fmt.Println("Time elapsed:", s.Time)
 	fmt.Println("Nodes coverage:", s.NodeCoverage)
 	fmt.Println("Links coverage:", s.LinkCoverage)
-	fmt.Println("Histogram:")
-	s.Hist.Print()
 }
 
 // Analyze analyzes given propagation log and returns filled Stats object.
-func Analyze(g *graph.Graph, plog *propagation.Log) *Stats {
+func Analyze(plog *propagation.Log, nodeCount, linkCount int) *Stats {
 	t := analyzeTiming(plog)
-	nodeHits, hist := analyzeNodeHits(g, plog)
-	nodeCoverage := analyzeNodeCoverage(g, nodeHits)
-	linkCoverage := analyzeLinkCoverage(g, plog)
+	nodeHits := analyzeNodeHits(plog)
+	nodeCoverage := analyzeNodeCoverage(nodeHits, nodeCount)
+	linkCoverage := analyzeLinkCoverage(plog, linkCount)
 
 	return &Stats{
 		NodeHits:     nodeHits,
 		NodeCoverage: nodeCoverage,
 		LinkCoverage: linkCoverage,
-		Hist:         hist,
 		Time:         t,
 	}
 }
 
-func analyzeNodeHits(g *graph.Graph, plog *propagation.Log) (map[string]int, *Histogram) {
-	nodeHits := make(map[string]int)
+func analyzeNodeHits(plog *propagation.Log) map[int]int {
+	nodeHits := make(map[int]int)
 
 	for _, nodes := range plog.Nodes {
 		for _, j := range nodes {
-			id, err := g.NodeIDByIdx(j)
-			if err != nil {
-				log.Fatal("Stats:", err)
-			}
-			nodeHits[id]++
+			nodeHits[j]++
 		}
 	}
 
-	hist := NewHistogram(HistogramOptions{
-		NumBuckets:   16,
-		GrowthFactor: 0.2,
-		MinValue:     1,
-	})
-	for key, v := range nodeHits {
-		fmt.Println("Node:", key, v)
-		err := hist.Add(int64(v))
-		if err != nil {
-			log.Println(err)
-		}
-	}
-
-	return nodeHits, hist
+	return nodeHits
 }
 
-func analyzeNodeCoverage(g *graph.Graph, nodeHits map[string]int) Coverage {
+func analyzeNodeCoverage(nodeHits map[int]int, total int) Coverage {
 	actual := len(nodeHits)
-	total := len(g.Nodes())
 	return NewCoverage(actual, total)
 }
 
-func analyzeLinkCoverage(g *graph.Graph, plog *propagation.Log) Coverage {
+func analyzeLinkCoverage(plog *propagation.Log, total int) Coverage {
 	linkHits := make(map[int]struct{})
 	for _, links := range plog.Indices {
 		for _, j := range links {
@@ -89,7 +65,6 @@ func analyzeLinkCoverage(g *graph.Graph, plog *propagation.Log) Coverage {
 	}
 
 	actual := len(linkHits)
-	total := len(g.Links())
 	return NewCoverage(actual, total)
 }
 

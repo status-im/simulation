@@ -12,7 +12,7 @@ type node string
 
 func (n node) ID() string { return string(n) }
 
-func TestAnalyze(t *testing.T) {
+func testGraph() *graph.Graph {
 	g := graph.NewGraph()
 	g.AddNode(node("0"))
 	g.AddNode(node("1"))
@@ -23,6 +23,11 @@ func TestAnalyze(t *testing.T) {
 	g.AddLink("1", "2")
 	g.AddLink("2", "0")
 	g.AddLink("0", "3")
+	return g
+}
+
+func TestAnalyze(t *testing.T) {
+	g := testGraph()
 
 	// example propagation log
 	// three timestamps: 10, 20 and 30 ms
@@ -36,7 +41,7 @@ func TestAnalyze(t *testing.T) {
 		},
 	}
 
-	stats := Analyze(g, plog)
+	stats := Analyze(plog, len(g.Nodes()), len(g.Links()))
 
 	expected := []struct {
 		name string
@@ -48,11 +53,33 @@ func TestAnalyze(t *testing.T) {
 		{"3", 1},
 	}
 
-	for _, node := range expected {
-		got := stats.NodeHits[node.name]
+	for i, node := range expected {
+		got := stats.NodeHits[i]
 		if got != node.hits {
 			t.Fatalf("Expected node '%s' to be hit %d times, but got %d", node.name, node.hits, got)
 		}
 
+	}
+}
+
+func BenchmarkAnalyze(b *testing.B) {
+	g := testGraph()
+
+	// example propagation log
+	// three timestamps: 10, 20 and 30 ms
+	// with first node hit 1 time, second and third - 3 times
+	plog := &propagation.Log{
+		Timestamps: []int{10, 20, 30},
+		Nodes: [][]int{
+			[]int{0, 1, 2},
+			[]int{1, 2},
+			[]int{2, 1, 3},
+		},
+	}
+
+	nodeCount := len(g.Nodes())
+	linksCount := len(g.Links())
+	for i := 0; i < b.N; i++ {
+		Analyze(plog, nodeCount, linksCount)
 	}
 }
