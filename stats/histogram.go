@@ -2,188 +2,38 @@ package stats
 
 import (
 	"fmt"
-	"log"
-	"math"
-	"strconv"
-	"strings"
+	"sort"
+
+	"github.com/gonum/floats"
+	"github.com/gonum/stat"
+	"github.com/joliv/spark"
 )
 
-// Histogram accumulates values in the form of a histogram with
-// exponentially increased bucket sizes.
+// Histogram is a simple histogram data holding structure.
 type Histogram struct {
-	Count        int64
-	Sum          int64
-	SumOfSquares int64
-	Min          int64
-	Max          int64
-	Buckets      []HistogramBucket
-
-	opts                          HistogramOptions
-	logBaseBucketSize             float64
-	oneOverLogOnePlusGrowthFactor float64
+	data []float64
 }
 
-// HistogramOptions contains the parameters that define the histogram's buckets.
-// The first bucket of the created histogram (with index 0) contains [min, min+n)
-// where n = BaseBucketSize, min = MinValue.
-// Bucket i (i>=1) contains [min + n * m^(i-1), min + n * m^i), where m = 1+GrowthFactor.
-// The type of the values is int64.
-type HistogramOptions struct {
-	// NumBuckets is the number of buckets.
-	NumBuckets int
-	// GrowthFactor is the growth factor of the buckets. A value of 0.1
-	// indicates that bucket N+1 will be 10% larger than bucket N.
-	GrowthFactor float64
-	// BaseBucketSize is the size of the first bucket.
-	BaseBucketSize float64
-	// MinValue is the lower bound of the first bucket.
-	MinValue int64
-}
+// NewHistogram creates and calculates a histogram from raw counts slice.
+func NewHistogram(x []float64, nBins int) *Histogram {
+	// x should be sorted
+	sort.Slice(x, func(i, j int) bool { return x[i] < x[j] })
 
-// HistogramBucket represents one histogram bucket.
-type HistogramBucket struct {
-	// LowBound is the lower bound of the bucket.
-	LowBound float64
-	// Count is the number of values in the bucket.
-	Count int64
-}
+	dividers := []float64{}
 
-// NewHistogram returns a pointer to a new Histogram object that was created
-// with the provided options.
-func NewHistogram(opts HistogramOptions) *Histogram {
-	if opts.NumBuckets == 0 {
-		opts.NumBuckets = 32
-	}
-	if opts.BaseBucketSize == 0.0 {
-		opts.BaseBucketSize = 1.0
-	}
-	h := Histogram{
-		Buckets: make([]HistogramBucket, opts.NumBuckets),
-		Min:     math.MaxInt64,
-		Max:     math.MinInt64,
-
-		opts:                          opts,
-		logBaseBucketSize:             math.Log(opts.BaseBucketSize),
-		oneOverLogOnePlusGrowthFactor: 1 / math.Log(1+opts.GrowthFactor),
-	}
-	m := 1.0 + opts.GrowthFactor
-	delta := opts.BaseBucketSize
-	h.Buckets[0].LowBound = float64(opts.MinValue)
-	for i := 1; i < opts.NumBuckets; i++ {
-		h.Buckets[i].LowBound = float64(opts.MinValue) + delta
-		delta = delta * m
-	}
-	return &h
-}
-
-// Print writes textual output of the histogram values.
-func (h *Histogram) Print() {
-	h.PrintWithUnit(1)
-}
-
-// PrintWithUnit writes textual output of the histogram values.
-// Data in histogram is divided by a Unit before print.
-func (h *Histogram) PrintWithUnit(unit float64) {
-	avg := float64(h.Sum) / float64(h.Count)
-	fmt.Printf("Count: %d  Min: %5.1f  Max: %5.1f  Avg: %.2f\n", h.Count, float64(h.Min)/unit, float64(h.Max)/unit, avg/unit)
-	fmt.Printf("%s\n", strings.Repeat("-", 60))
-	if h.Count <= 0 {
-		return
-	}
-
-	maxBucketDigitLen := len(strconv.FormatFloat(h.Buckets[len(h.Buckets)-1].LowBound, 'f', 6, 64))
-	if maxBucketDigitLen < 3 {
-		// For "inf".
-		maxBucketDigitLen = 3
-	}
-	maxCountDigitLen := len(strconv.FormatInt(h.Count, 10))
-	percentMulti := 100 / float64(h.Count)
-
-	accCount := int64(0)
-	for i, b := range h.Buckets {
-		fmt.Printf("[%*f, ", maxBucketDigitLen, b.LowBound/unit)
-		if i+1 < len(h.Buckets) {
-			fmt.Printf("%*f)", maxBucketDigitLen, h.Buckets[i+1].LowBound/unit)
-		} else {
-			fmt.Printf("%*s)", maxBucketDigitLen, "inf")
-		}
-
-		accCount += b.Count
-		fmt.Printf("  %*d  %5.1f%%  %5.1f%%", maxCountDigitLen, b.Count, float64(b.Count)*percentMulti, float64(accCount)*percentMulti)
-
-		const barScale = 0.1
-		barLength := int(float64(b.Count)*percentMulti*barScale + 0.5)
-		fmt.Printf("  %s\n", strings.Repeat("#", barLength))
+	// automatically calculate dividers
+	dividers = make([]float64, nBins+1)
+	min := floats.Min(x)
+	max := floats.Max(x)
+	max += 1 // increase the max divider so max value of x is contained within the last bucket
+	floats.Span(dividers, min, max)
+	data := stat.Histogram(nil, dividers, x, nil)
+	return &Histogram{
+		data: data,
 	}
 }
 
-// Clear resets all the content of histogram.
-func (h *Histogram) Clear() {
-	h.Count = 0
-	h.Sum = 0
-	h.SumOfSquares = 0
-	h.Min = math.MaxInt64
-	h.Max = math.MinInt64
-	for i := range h.Buckets {
-		h.Buckets[i].Count = 0
-	}
-}
-
-// Opts returns a copy of the options used to create the Histogram.
-func (h *Histogram) Opts() HistogramOptions {
-	return h.opts
-}
-
-// Add adds a value to the histogram.
-func (h *Histogram) Add(value int64) error {
-	bucket, err := h.findBucket(value)
-	if err != nil {
-		return err
-	}
-	h.Buckets[bucket].Count++
-	h.Count++
-	h.Sum += value
-	h.SumOfSquares += value * value
-	if value < h.Min {
-		h.Min = value
-	}
-	if value > h.Max {
-		h.Max = value
-	}
-	return nil
-}
-
-func (h *Histogram) findBucket(value int64) (int, error) {
-	delta := float64(value - h.opts.MinValue)
-	var b int
-	if delta >= h.opts.BaseBucketSize {
-		// b = log_{1+growthFactor} (delta / baseBucketSize) + 1
-		//   = log(delta / baseBucketSize) / log(1+growthFactor) + 1
-		//   = (log(delta) - log(baseBucketSize)) * (1 / log(1+growthFactor)) + 1
-		b = int((math.Log(delta)-h.logBaseBucketSize)*h.oneOverLogOnePlusGrowthFactor + 1)
-	}
-	if b >= len(h.Buckets) {
-		return 0, fmt.Errorf("no bucket for value: %d", value)
-	}
-	return b, nil
-}
-
-// Merge takes another histogram h2, and merges its content into h.
-// The two histograms must be created by equivalent HistogramOptions.
-func (h *Histogram) Merge(h2 *Histogram) {
-	if h.opts != h2.opts {
-		log.Fatalf("failed to merge histograms, created by inequivalent options")
-	}
-	h.Count += h2.Count
-	h.Sum += h2.Sum
-	h.SumOfSquares += h2.SumOfSquares
-	if h2.Min < h.Min {
-		h.Min = h2.Min
-	}
-	if h2.Max > h.Max {
-		h.Max = h2.Max
-	}
-	for i, b := range h2.Buckets {
-		h.Buckets[i].Count += b.Count
-	}
+// String implements Stringer for Histogram.
+func (h *Histogram) String() string {
+	return fmt.Sprintf("%v\n%v", h.data, spark.Line(h.data))
 }
