@@ -232,19 +232,12 @@ func (s *Simulator) logEntries2PropagationLog(entries []*logEntry) *propagation.
 		tsnodes[entry.Ts] = nnodes
 	}
 
-	var ret = &propagation.Log{
-		Timestamps: make([]int, 0, len(tss)),
-		Indices:    make([][]int, 0, len(tss)),
-		Nodes:      make([][]int, 0, len(tss)),
-	}
-
+	plog := propagation.NewLog(len(tss))
 	for ts, links := range tss {
-		ret.Timestamps = append(ret.Timestamps, int(ts))
-		ret.Indices = append(ret.Indices, links)
-		ret.Nodes = append(ret.Nodes, tsnodes[ts])
+		plog.AddStep(int(ts), tsnodes[ts], links)
 	}
 
-	return ret
+	return plog
 }
 
 // nodeConfig generates config for simulated node with random key.
