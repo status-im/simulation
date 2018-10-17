@@ -9,12 +9,13 @@ import (
 
 // Stats represents stats data for given simulation log.
 type Stats struct {
-	NodeHits      map[int]int
-	NodeCoverage  Coverage
-	LinkCoverage  Coverage
-	NodeHistogram *Histogram
-	LinkHistogram *Histogram
-	Time          time.Duration
+	NodeHits            map[int]int
+	NodeCoverage        Coverage
+	LinkCoverage        Coverage
+	NodeHistogram       *Histogram
+	LinkHistogram       *Histogram
+	TimeToNodeHistogram *Histogram
+	Time                time.Duration
 }
 
 // PrintVerbose prints detailed terminal-friendly stats to
@@ -26,6 +27,7 @@ func (s *Stats) PrintVerbose() {
 	fmt.Println("Links coverage:", s.LinkCoverage)
 	fmt.Println("Nodes histogram:", s.NodeHistogram)
 	fmt.Println("Links histogram:", s.LinkHistogram)
+	fmt.Println("TimeToNode histogram:", s.TimeToNodeHistogram)
 }
 
 // Analyze analyzes given propagation log and returns filled Stats object.
@@ -34,14 +36,16 @@ func Analyze(plog *propagation.Log, nodeCount, linkCount int) *Stats {
 	nodeHits, nodeHistogram := analyzeNodeHits(plog)
 	nodeCoverage := analyzeNodeCoverage(nodeHits, nodeCount)
 	linkCoverage, linkHistogram := analyzeLinkCoverage(plog, linkCount)
+	timeToNodeHistogram := analyzeTimeToNode(plog)
 
 	return &Stats{
-		NodeHits:      nodeHits,
-		NodeCoverage:  nodeCoverage,
-		LinkCoverage:  linkCoverage,
-		NodeHistogram: nodeHistogram,
-		LinkHistogram: linkHistogram,
-		Time:          t,
+		NodeHits:            nodeHits,
+		NodeCoverage:        nodeCoverage,
+		LinkCoverage:        linkCoverage,
+		NodeHistogram:       nodeHistogram,
+		LinkHistogram:       linkHistogram,
+		TimeToNodeHistogram: timeToNodeHistogram,
+		Time:                t,
 	}
 }
 
@@ -94,4 +98,22 @@ func analyzeTiming(plog *propagation.Log) time.Duration {
 		}
 	}
 	return time.Duration(max) * time.Millisecond
+}
+
+func analyzeTimeToNode(plog *propagation.Log) *Histogram {
+	var hits = make(map[int]int)
+	for i, ts := range plog.Timestamps {
+		nodes := plog.Nodes[i]
+		for _, j := range nodes {
+			if _, ok := hits[j]; !ok {
+				hits[j] = ts
+			}
+		}
+	}
+
+	x := make([]float64, 0, len(plog.Nodes))
+	for _, ts := range hits {
+		x = append(x, float64(ts))
+	}
+	return NewHistogram(x, 20)
 }
