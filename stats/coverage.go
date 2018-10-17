@@ -20,5 +20,5 @@ func NewCoverage(actual, total int) Coverage {
 
 // String implements Stringer interface for Coverage.
 func (c Coverage) String() string {
-	return fmt.Sprintf("%.2f (%d/%d)", c.Percentage, c.Actual, c.Total)
+	return fmt.Sprintf("%.0f%% (%d/%d)", c.Percentage, c.Actual, c.Total)
 }
