@@ -1,29 +1,54 @@
-# Propagation simulator
+# Propagation simulator server
 ---
 
-This simulator implements command for running different simulation implementations. Currently supported:
+This simulator server implements an API for running message propagation through network.
+
+Currently supported:
  - whisperv6
  - naive p2p propagation
+
+
+Server expects a network topology as an input, and returns propagation log data.
+
 
 # Installation
 
 ```
-go get github.com/status-im/simulation/cmd/propagation_simulator
+go get github.com/status-im/simulation/cmd/propagation_server
 ```
 
 # Usage
 
 Just run:
 ```
-propagation_simulator
+propagation_server
 ```
 
-This tool is looking for the `network.json` file as an input. You may override this name with `-i filename.json` command line flag. This should be valid JSON file with graph structure described here (link TBD). See examples/ directory.
+You can specify different bind address using `-h` command line flag. See `./propagation_server -h` for usage info.
 
+
+# Request JSON
+
+``json
+{
+  "nodes": [
+    {
+      "id": "192.168.1.2"
+    },
+    {
+      "id": "192.168.1.4"
+    }
+  ],
+  "links": [
+    {
+      "source": "192.168.1.2",
+      "target": "192.168.1.4"
+    }
+  ]
+}
 ```
-propagation_simulator -i graph.json
-```
 
-Output statistics will be printed to the stdout, and final propagation data will be writtein into `propagation.json` file. (TODO: describe file format and further steps)
+# Response format
 
-See `propagation_simulator --help` for more options.
+Plog (propagation log)
+TBD (see code)
