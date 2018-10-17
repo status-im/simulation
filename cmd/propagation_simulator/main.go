@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/divan/graphx/formats"
@@ -16,24 +15,16 @@ func main() {
 		input        = flag.String("i", "network.json", "Input filename for pregenerated data to be used with simulation")
 		output       = flag.String("o", "propagation.json", "Output filename for p2p sending data")
 		gethlogLevel = flag.String("loglevel", "crit", "Geth log level for whisper simulator (crti, error, warn, info, debug, trace)")
-		server       = flag.Bool("server", false, "Start as server to be used with whisperviz")
-		serverAddr   = flag.String("h", "localhost:8084", "Address to bind to in server mode")
 	)
 	flag.Parse()
 
 	setGethLogLevel(*gethlogLevel)
 
-	if *server {
-		log.Println("Starting simulator server on", *serverAddr)
-		http.HandleFunc("/", allowCORS(simulationHandler))
-		log.Fatal(http.ListenAndServe(*serverAddr, nil))
-		return
-	}
-
 	data, err := formats.FromD3JSON(*input)
 	if err != nil {
 		log.Fatal("Opening input file failed: ", err)
 	}
+	log.Printf("Loaded network graph from %s file", *input)
 
 	sim := NewSimulation(data)
 	log.Printf("Starting message sending simulation for graph with %d nodes...", len(data.Nodes()))
