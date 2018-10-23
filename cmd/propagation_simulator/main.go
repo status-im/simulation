@@ -33,7 +33,7 @@ func main() {
 	sim.WriteOutputToFile(*output)
 
 	// stats
-	ss := stats.Analyze(data, sim.plog)
+	ss := stats.Analyze(sim.plog, len(data.Nodes()), len(data.Links()))
 	ss.PrintVerbose()
 
 	log.Printf("Written propagation data into %s", *output)
