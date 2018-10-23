@@ -25,3 +25,15 @@ func (l *Log) AddStep(ts int, nodes, links []int) {
 	l.Nodes = append(l.Nodes, nodes)
 	l.Indices = append(l.Indices, links)
 }
+
+func (l *Log) Less(i, j int) bool {
+	return l.Timestamps[i] < l.Timestamps[j]
+}
+func (l *Log) Swap(i, j int) {
+	l.Timestamps[i], l.Timestamps[j] = l.Timestamps[j], l.Timestamps[i]
+	l.Nodes[i], l.Nodes[j] = l.Nodes[j], l.Nodes[i]
+	l.Indices[j], l.Indices[j] = l.Indices[j], l.Indices[i]
+}
+func (l *Log) Len() int {
+	return len(l.Timestamps)
+}
