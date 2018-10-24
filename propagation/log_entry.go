@@ -1,11 +1,11 @@
-package naivep2p
+package propagation
 
 import (
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/status-im/simulation/propagation"
+	"github.com/divan/graphx/graph"
 )
 
 // LogEntry defines the reporting log entry for one
@@ -13,43 +13,33 @@ import (
 type LogEntry struct {
 	From int
 	To   int
-	Ts   time.Duration
+	Ts   int64
 }
 
 // String implements Stringer interface for LogEntry.
 func (l LogEntry) String() string {
-	return fmt.Sprintf("%s: %d -> %d", l.Ts.String(), l.From, l.To)
+	return fmt.Sprintf("%d: %d -> %d", l.Ts, l.From, l.To)
 }
 
-// NewLogEntry creates new log entry.
-func NewLogEntry(start time.Time, from, to int) LogEntry {
-	return LogEntry{
-		Ts:   time.Since(start) / time.Millisecond,
+// NewlogEntry creates new log entry.
+func NewLogEntry(t, start time.Time, from, to int) *LogEntry {
+	delta := t.Sub(start)
+	return &LogEntry{
+		Ts:   int64(delta / time.Millisecond),
 		From: from,
 		To:   to,
 	}
 }
 
-// logEntries2PropagationLog converts raw slice of LogEntries to PropagationLog,
+// LogEntries2Log converts raw slice of LogEntries to Log,
 // aggregating by timestamps and converting nodes indices to link indices.
 // We expect that timestamps already bucketed into Nms groups.
-func (s *Simulator) logEntries2PropagationLog(entries []*LogEntry) *propagation.Log {
-	findLink := func(from, to int) int {
-		links := s.data.Links()
-		for i := range links {
-			if links[i].FromIdx() == from && links[i].ToIdx() == to ||
-				links[i].ToIdx() == from && links[i].FromIdx() == to {
-				return i
-			}
-		}
-		return -1
-	}
-
-	tss := make(map[time.Duration][]int)
-	tsnodes := make(map[time.Duration][]int)
+func LogEntries2Log(data *graph.Graph, entries []*LogEntry) *Log {
+	tss := make(map[int64][]int)
+	tsnodes := make(map[int64][]int)
 	for _, entry := range entries {
-		idx := findLink(entry.From, entry.To)
-		if idx == -1 {
+		idx, err := data.LinkByIndices(entry.From, entry.To)
+		if err != nil {
 			log.Println("[EE] Wrong link", entry)
 			continue
 		}
@@ -72,7 +62,7 @@ func (s *Simulator) logEntries2PropagationLog(entries []*LogEntry) *propagation.
 		tsnodes[entry.Ts] = nnodes
 	}
 
-	plog := propagation.NewLog(len(tss))
+	plog := NewLog(len(tss))
 	for ts, links := range tss {
 		plog.AddStep(int(ts), tsnodes[ts], links)
 	}

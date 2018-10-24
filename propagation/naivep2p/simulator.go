@@ -14,7 +14,7 @@ type Simulator struct {
 	delay           time.Duration
 	peers           map[int][]int
 	nodesCh         []chan Message
-	reportCh        chan LogEntry
+	reportCh        chan propagation.LogEntry
 	peersToSendTo   int // number of peers to propagate message
 	wg              *sync.WaitGroup
 	simulationStart time.Time
@@ -34,7 +34,7 @@ func NewSimulator(data *graph.Graph, N int, delay time.Duration) *Simulator {
 		delay:         delay,
 		peers:         PrecalculatePeers(data),
 		peersToSendTo: N,
-		reportCh:      make(chan LogEntry),
+		reportCh:      make(chan propagation.LogEntry),
 		nodesCh:       make([]chan Message, nodeCount), // one channel per node
 		wg:            new(sync.WaitGroup),
 	}
@@ -66,13 +66,13 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 		done <- true
 	}()
 
-	var ret []*LogEntry
+	var ret []*propagation.LogEntry
 	for {
 		select {
 		case val := <-s.reportCh:
 			ret = append(ret, &val)
 		case <-done:
-			return s.logEntries2PropagationLog(ret)
+			return propagation.LogEntries2Log(s.data, ret)
 		}
 	}
 }
@@ -119,5 +119,6 @@ func (s *Simulator) propagateMessage(from int, message Message) {
 // sendMessage simulates message sending for given from and to indexes.
 func (s *Simulator) sendMessage(from, to int, message Message) {
 	s.nodesCh[to] <- message
-	s.reportCh <- NewLogEntry(s.simulationStart, from, to)
+	entry := propagation.NewLogEntry(time.Now(), s.simulationStart, from, to)
+	s.reportCh <- *entry
 }

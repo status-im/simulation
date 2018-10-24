@@ -169,7 +169,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 	var (
 		subErr          error
 		done, hasEvents bool
-		plog            []*logEntry
+		plog            []*propagation.LogEntry
 	)
 	for subErr == nil && !done {
 		select {
@@ -179,7 +179,8 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 				if msg.Code == 1 && msg.Protocol == "shh" && msg.Received == false {
 					from := ncache[msg.One]
 					to := ncache[msg.Other]
-					entry := newlogEntry(start, from, to)
+					t := event.Time
+					entry := propagation.NewLogEntry(start, t, from, to)
 					plog = append(plog, entry)
 
 					hasEvents = true
@@ -198,46 +199,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 		log.Fatal("[ERROR] Didn't get any events, something wrong with simulator.")
 	}
 
-	return s.logEntries2PropagationLog(plog)
-}
-
-// logEntries2PropagationLog converts raw slice of LogEntries to PropagationLog,
-// aggregating by timestamps and converting nodes indices to link indices.
-// We expect that timestamps already bucketed into Nms groups.
-func (s *Simulator) logEntries2PropagationLog(entries []*logEntry) *propagation.Log {
-	tss := make(map[time.Duration][]int)
-	tsnodes := make(map[time.Duration][]int)
-	for _, entry := range entries {
-		idx, err := s.data.LinkByIndices(entry.From, entry.To)
-		if err != nil {
-			log.Println("[EE] Wrong link", entry)
-			continue
-		}
-
-		// fill links map
-		if _, ok := tss[entry.Ts]; !ok {
-			tss[entry.Ts] = make([]int, 0)
-		}
-
-		values := tss[entry.Ts]
-		values = append(values, idx)
-		tss[entry.Ts] = values
-
-		// fill tsnodes map
-		if _, ok := tsnodes[entry.Ts]; !ok {
-			tsnodes[entry.Ts] = make([]int, 0)
-		}
-		nnodes := tsnodes[entry.Ts]
-		nnodes = append(nnodes, entry.From, entry.To)
-		tsnodes[entry.Ts] = nnodes
-	}
-
-	plog := propagation.NewLog(len(tss))
-	for ts, links := range tss {
-		plog.AddStep(int(ts), tsnodes[ts], links)
-	}
-
-	return plog
+	return propagation.LogEntries2Log(s.data, plog)
 }
 
 // nodeConfig generates config for simulated node with random key.
