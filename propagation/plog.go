@@ -3,7 +3,7 @@ package propagation
 // Log describes propagation data collected during simulation.
 type Log struct {
 	Timestamps []int   // timestamps in milliseconds starting from T0
-	Indices    [][]int // indices of links for each step, len should be equal to len of Timestamps
+	Links      [][]int // indices of links for each step, len should be equal to len of Timestamps
 	Nodes      [][]int // indices of nodes involved in each step, should match Timestamps
 }
 
@@ -12,7 +12,7 @@ type Log struct {
 func NewLog(n int) *Log {
 	return &Log{
 		Timestamps: make([]int, 0, n),
-		Indices:    make([][]int, 0, n),
+		Links:      make([][]int, 0, n),
 		Nodes:      make([][]int, 0, n),
 	}
 }
@@ -23,7 +23,7 @@ func NewLog(n int) *Log {
 func (l *Log) AddStep(ts int, nodes, links []int) {
 	l.Timestamps = append(l.Timestamps, ts)
 	l.Nodes = append(l.Nodes, nodes)
-	l.Indices = append(l.Indices, links)
+	l.Links = append(l.Links, links)
 }
 
 func (l *Log) Less(i, j int) bool {
@@ -32,7 +32,7 @@ func (l *Log) Less(i, j int) bool {
 func (l *Log) Swap(i, j int) {
 	l.Timestamps[i], l.Timestamps[j] = l.Timestamps[j], l.Timestamps[i]
 	l.Nodes[i], l.Nodes[j] = l.Nodes[j], l.Nodes[i]
-	l.Indices[j], l.Indices[j] = l.Indices[j], l.Indices[i]
+	l.Links[j], l.Links[j] = l.Links[j], l.Links[i]
 }
 func (l *Log) Len() int {
 	return len(l.Timestamps)

@@ -34,7 +34,7 @@ func main() {
 	plog := &propagation.Log{}
 	err = json.NewDecoder(fd).Decode(&plog)
 	if err != nil {
-		log.Fatalf("Parsing propagation log failed: ", err)
+		log.Fatalf("Parsing propagation log failed: %v", err)
 	}
 
 	ss := stats.Analyze(plog, len(data.Nodes()), len(data.Links()))

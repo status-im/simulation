@@ -17,7 +17,7 @@ package plog
 
 type Data struct {
     Timestamps []int   // timestamps in milliseconds starting from T0
-    Indices    [][]int // indices of links for each step, len should match Timestamps 
+    Links      [][]int // indices of links for each step, len should match Timestamps 
     Nodes      [][]int // indices of nodes involved in each step, len should match Timestamps 
 
 ```
