@@ -180,7 +180,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 					from := ncache[msg.One]
 					to := ncache[msg.Other]
 					t := event.Time
-					entry := propagation.NewLogEntry(start, t, from, to)
+					entry := propagation.NewLogEntry(t, start, from, to)
 					plog = append(plog, entry)
 
 					hasEvents = true
