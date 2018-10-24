@@ -74,7 +74,7 @@ func analyzeLinkCoverage(plog *propagation.Log, total int) (Coverage, *Histogram
 	linkHits := make(map[int]struct{})
 
 	x := make([]float64, 0, len(plog.Timestamps))
-	for _, links := range plog.Indices {
+	for _, links := range plog.Links {
 		for _, j := range links {
 			linkHits[j] = struct{}{}
 		}
