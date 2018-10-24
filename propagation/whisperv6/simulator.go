@@ -39,7 +39,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 		MinimumAcceptedPOW: 0.001,
 	}
 
-	whispers := make(map[enode.ID]*whisper.Whisper, len(data.Nodes()))
+	whispers := make(map[enode.ID]*whisper.Whisper, data.NumNodes())
 	services := map[string]adapters.ServiceFunc{
 		"shh": func(ctx *adapters.ServiceContext) (node.Service, error) {
 			return whispers[ctx.Config.ID], nil
@@ -51,15 +51,13 @@ func NewSimulator(data *graph.Graph) *Simulator {
 		DefaultService: "shh",
 	})
 
-	nodes := data.Nodes()
-	nodeCount := len(nodes)
 	sim := &Simulator{
 		data:    data,
 		network: network,
 	}
 
 	log.Println("Creating nodes...")
-	for i := 0; i < nodeCount; i++ {
+	for i := 0; i < data.NumNodes(); i++ {
 		node, err := sim.network.NewNodeWithConfig(nodeConfig(i))
 		if err != nil {
 			log.Fatal("[ERROR] Can't start node: ", err)

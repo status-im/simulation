@@ -41,7 +41,7 @@ func TestAnalyze(t *testing.T) {
 		},
 	}
 
-	stats := Analyze(plog, len(g.Nodes()), len(g.Links()))
+	stats := Analyze(plog, g.NumNodes(), g.NumLinks())
 
 	expected := []struct {
 		name string
@@ -77,9 +77,7 @@ func BenchmarkAnalyze(b *testing.B) {
 		},
 	}
 
-	nodeCount := len(g.Nodes())
-	linksCount := len(g.Links())
 	for i := 0; i < b.N; i++ {
-		Analyze(plog, nodeCount, linksCount)
+		Analyze(plog, g.NumNodes(), g.NumLinks())
 	}
 }

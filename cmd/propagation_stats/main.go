@@ -37,6 +37,6 @@ func main() {
 		log.Fatalf("Parsing propagation log failed: %v", err)
 	}
 
-	ss := stats.Analyze(plog, len(data.Nodes()), len(data.Links()))
+	ss := stats.Analyze(plog, data.NumNodes(), data.NumLinks())
 	ss.PrintVerbose()
 }

@@ -27,7 +27,7 @@ func simulationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	log.Printf("Loaded graph with %d nodes", len(data.Nodes()))
+	log.Printf("Loaded graph with %d nodes", data.NumNodes())
 	sim := NewSimulation(data)
 	sim.Start()
 	defer sim.Stop()

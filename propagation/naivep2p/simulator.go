@@ -28,7 +28,7 @@ type Message struct {
 
 // NewSimulator initializes new simulator for the given graph data.
 func NewSimulator(data *graph.Graph, N int, delay time.Duration) *Simulator {
-	nodeCount := len(data.Nodes())
+	nodeCount := data.NumNodes()
 	sim := &Simulator{
 		data:          data,
 		delay:         delay,
