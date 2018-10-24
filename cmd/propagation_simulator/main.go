@@ -15,6 +15,8 @@ func main() {
 		input        = flag.String("i", "network.json", "Input filename for pregenerated data to be used with simulation")
 		output       = flag.String("o", "propagation.json", "Output filename for p2p sending data")
 		gethlogLevel = flag.String("loglevel", "crit", "Geth log level for whisper simulator (crti, error, warn, info, debug, trace)")
+		ttl          = flag.Int("ttl", 10, "TTL for generated messages")
+		size         = flag.Int("msgSize", 400, "Payload size for generated messages")
 	)
 	flag.Parse()
 
@@ -28,7 +30,7 @@ func main() {
 
 	sim := NewSimulation(data)
 	log.Printf("Starting message sending simulation for graph with %d nodes...", len(data.Nodes()))
-	sim.Start()
+	sim.Start(*ttl, *size)
 	defer sim.Stop()
 	sim.WriteOutputToFile(*output)
 

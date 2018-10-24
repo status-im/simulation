@@ -121,7 +121,7 @@ func (s *Simulator) Stop() error {
 }
 
 // SendMessage sends single message and tracks propagation. Implements propagation.Simulator.
-func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
+func (s *Simulator) SendMessage(startNodeIdx, ttl, size int) *propagation.Log {
 	node := s.network.Nodes[startNodeIdx]
 
 	// the easiest way to send a message through the node is
@@ -149,7 +149,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
 
 	start := time.Now()
 
-	msg := generateMessage(ttl, symkeyID)
+	msg := generateMessage(ttl, symkeyID, size)
 	var ignored string
 	err = client.Call(&ignored, "shh_post", msg)
 	if err != nil {

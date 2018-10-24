@@ -29,8 +29,8 @@ func NewSimulation(network *graph.Graph) *Simulation {
 }
 
 // Start starts simulation, creating network and preparing it for message sending.
-func (s *Simulation) Start() {
-	s.plog = s.sim.SendMessage(0, 10)
+func (s *Simulation) Start(sender, ttl, size int) {
+	s.plog = s.sim.SendMessage(sender, ttl, size)
 }
 
 // Stop stops simulation and shuts down network.

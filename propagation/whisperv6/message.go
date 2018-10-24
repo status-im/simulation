@@ -11,11 +11,17 @@ const (
 	aesKeyLength = 32
 )
 
-func generateMessage(ttl int, symkeyID string) *whisperv6.NewMessage {
+func generateMessage(ttl int, symkeyID string, size int) *whisperv6.NewMessage {
 	// set all the parameters except p.Dst and p.Padding
 	buf := make([]byte, 4)
 	rand.Read(buf)
-	sz := rand.Intn(400)
+
+	var sz uint32
+	if size == 0 {
+		sz = whisperv6.DefaultMaxMessageSize
+	} else if uint32(size) > whisperv6.MaxMessageSize {
+		sz = whisperv6.MaxMessageSize
+	}
 
 	msg := &whisperv6.NewMessage{
 		PowTarget: 0.01,

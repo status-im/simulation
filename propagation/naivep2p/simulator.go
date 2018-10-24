@@ -1,6 +1,7 @@
 package naivep2p
 
 import (
+	"crypto/rand"
 	"sync"
 	"time"
 
@@ -22,7 +23,7 @@ type Simulator struct {
 
 // Message represents the message propagated in the simulation.
 type Message struct {
-	Content string
+	Content []byte
 	TTL     int
 }
 
@@ -52,11 +53,8 @@ func (s *Simulator) Stop() error {
 }
 
 // SendMessage sends single message and tracks propagation. Implements propagation.Simulator.
-func (s *Simulator) SendMessage(startNodeIdx, ttl int) *propagation.Log {
-	message := Message{
-		Content: "dummy",
-		TTL:     ttl,
-	}
+func (s *Simulator) SendMessage(startNodeIdx, ttl, size int) *propagation.Log {
+	message := s.generateMessage(ttl, size)
 	s.simulationStart = time.Now()
 	s.propagateMessage(startNodeIdx, message)
 
@@ -92,10 +90,10 @@ func (s *Simulator) runNode(i int, ch chan Message) {
 	for {
 		select {
 		case message := <-ch:
-			if cache[message.Content] {
+			if cache[string(message.Content)] {
 				continue
 			}
-			cache[message.Content] = true
+			cache[string(message.Content)] = true
 			message.TTL--
 			if message.TTL == 0 {
 				return
@@ -121,4 +119,13 @@ func (s *Simulator) sendMessage(from, to int, message Message) {
 	s.nodesCh[to] <- message
 	entry := propagation.NewLogEntry(time.Now(), s.simulationStart, from, to)
 	s.reportCh <- *entry
+}
+
+func (s *Simulator) generateMessage(ttl, size int) Message {
+	msg := Message{
+		Content: make([]byte, size),
+		TTL:     ttl,
+	}
+	rand.Read(msg.Content)
+	return msg
 }
