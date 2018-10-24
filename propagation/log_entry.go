@@ -21,7 +21,7 @@ func (l LogEntry) String() string {
 	return fmt.Sprintf("%d: %d -> %d", l.Ts, l.From, l.To)
 }
 
-// NewlogEntry creates new log entry.
+// NewLogEntry creates new log entry.
 func NewLogEntry(t, start time.Time, from, to int) *LogEntry {
 	delta := t.Sub(start)
 	return &LogEntry{

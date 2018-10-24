@@ -26,14 +26,19 @@ func (l *Log) AddStep(ts int, nodes, links []int) {
 	l.Links = append(l.Links, links)
 }
 
+// Less implements sort.Interface.
 func (l *Log) Less(i, j int) bool {
 	return l.Timestamps[i] < l.Timestamps[j]
 }
+
+// Swap implements sort.Interface.
 func (l *Log) Swap(i, j int) {
 	l.Timestamps[i], l.Timestamps[j] = l.Timestamps[j], l.Timestamps[i]
 	l.Nodes[i], l.Nodes[j] = l.Nodes[j], l.Nodes[i]
-	l.Links[j], l.Links[j] = l.Links[j], l.Links[i]
+	l.Links[i], l.Links[j] = l.Links[j], l.Links[i]
 }
+
+// Len implements sort.Interface.
 func (l *Log) Len() int {
 	return len(l.Timestamps)
 }
