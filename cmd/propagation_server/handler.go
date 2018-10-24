@@ -36,6 +36,7 @@ func simulationHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	buf := bytes.NewBuffer(req.Network)
 	network, err := formats.FromD3JSONReader(buf)
@@ -44,7 +45,6 @@ func simulationHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
 
 	log.Printf("Loaded graph with %d nodes", network.NumNodes())
 	sim := NewSimulation(network)

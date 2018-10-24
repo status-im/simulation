@@ -79,6 +79,7 @@ func NewSimulator(data *graph.Graph) *Simulator {
 	defer sub.Unsubscribe()
 
 	count := 0
+	connectingDone := make(chan struct{})
 	go func() {
 		log.Println("Connecting nodes...")
 		for _, link := range data.Links() {
@@ -89,6 +90,8 @@ func NewSimulator(data *graph.Graph) *Simulator {
 				count++
 			}
 		}
+		log.Println("Connected all nodes...")
+		close(connectingDone)
 	}()
 
 	// wait for all nodes to establish connections
@@ -107,6 +110,9 @@ func NewSimulator(data *graph.Graph) *Simulator {
 			log.Fatal("Failed to connect nodes", subErr)
 		}
 	}
+
+	sub.Unsubscribe()
+	<-connectingDone
 	log.Println("All connections established")
 
 	return sim
@@ -131,7 +137,7 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl, size int) *propagation.Log {
 		log.Fatal("Failed getting client", err)
 	}
 
-	log.Printf(" Sending Whisper message from %s...\n", node.ID().String())
+	log.Printf(" Sending Whisper message (ttl: %d, size %d bytes) from %s...\n", ttl, size, node.ID().String())
 
 	var symkeyID string
 	symKey := make([]byte, aesKeyLength)
@@ -147,8 +153,6 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl, size int) *propagation.Log {
 	sub := s.network.Events().Subscribe(events)
 	defer sub.Unsubscribe()
 
-	start := time.Now()
-
 	msg := generateMessage(ttl, symkeyID, size)
 	var ignored string
 	err = client.Call(&ignored, "shh_post", msg)
@@ -162,13 +166,17 @@ func (s *Simulator) SendMessage(startNodeIdx, ttl, size int) *propagation.Log {
 		ncache[s.network.Nodes[i].ID()] = i
 	}
 
-	timer := time.NewTimer(time.Duration(ttl) * time.Second)
+	start := time.Now() // mark simulation start
+
+	timeout := time.Duration(ttl)*time.Second + 200*time.Millisecond // add a bit in the end
+	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	var (
 		subErr          error
 		done, hasEvents bool
 		plog            []*propagation.LogEntry
 	)
+
 	for subErr == nil && !done {
 		select {
 		case event := <-events:
