@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/divan/graphx/graph"
 	"github.com/status-im/simulation/propagation"
@@ -25,7 +26,7 @@ func NewSimulation(algo string, network *graph.Graph) *Simulation {
 	if algo == "whisperv6" {
 		sim = whisperv6.NewSimulator(network)
 	} else {
-		sim = gossip.NewSimulator(network, 4, 10)
+		sim = gossip.NewSimulator(network, 4, 400*time.Millisecond)
 	}
 
 	return &Simulation{
