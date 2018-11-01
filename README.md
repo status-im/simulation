@@ -35,7 +35,21 @@ Original intent of these simulators is to provide stats and resulting traces/log
 | Docker | Docker-based network | TBD |
 
 ## Usage
+As a backend for the visualization frontend:
 
+```
+go get github.com/status-im/simulation/cmd/propagation_server
+
+propagation_server
+```
+
+As a commandline tool:
+
+```
+go get github.com/status-im/simulation/cmd/propagation_simulator
+// copy network.json to current directory
+propagation_simulator --help
+```
 
 ## License
 MIT
