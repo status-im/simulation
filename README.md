@@ -4,6 +4,7 @@ This repository holds different simulators for exploring and researching p2p net
 
 Original intent of these simulators is to provide stats and resulting traces/logs for further analysis and visualization.
 
+## Design
 ```
 
 +------------------+   +----------------+   +-------------+   +------------------+                 
@@ -17,17 +18,21 @@ Original intent of these simulators is to provide stats and resulting traces/log
 +------------------+   +----------------+   +-------------+   +------------------+                 
 ```
 
-See READMEs for each package/program separately.
+### Simulators support
 
-## Propagation
-Propagation simulators send message over known network topology and record its propagation data/stats.
+| Simulator   | State | Description |
+|---|---|---|
+| **WhisperV6** | Done | Master branch if go-ethereum Whisper implementation  |
+| **Naive**  | Done | Naive p2p propagation  |
+| PSS | TBD | Swarm's PSS messaging |
 
-Currently implemented:
+### Network environments support
 
-| Simulator   | Description |
-|---|---|
-| WhisperV6  | Master branch if go-ethereum Whisper implementation  |
-| Naive  | Naive p2p propagation  |
+| Node type  | State | Description |
+|---|---|---|
+| **In-Memory** | Done | Single node in-memory network  |
+| Exec  | TBD | Single node native binary network with localhost connection |
+| Docker | TBD | Docker-based network |
 
 ## Usage
 
