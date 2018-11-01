@@ -31,20 +31,26 @@ You can specify different bind address using `-h` command line flag. See `./prop
 
 ``json
 {
-  "nodes": [
-    {
-      "id": "192.168.1.2"
-    },
-    {
-      "id": "192.168.1.4"
-    }
-  ],
-  "links": [
-    {
-      "source": "192.168.1.2",
-      "target": "192.168.1.4"
-    }
-  ]
+	"algorithm": "whisperv6",
+	"senderIdx": 0,
+	"ttl": 10,
+	"msg_size": 300,
+	"network": {
+		"nodes": [
+		{
+			"id": "192.168.1.2"
+		},
+		{
+			"id": "192.168.1.4"
+		}
+		],
+		"links": [
+		{
+			"source": "192.168.1.2",
+			"target": "192.168.1.4"
+		}
+		]
+	}
 }
 ```
 
