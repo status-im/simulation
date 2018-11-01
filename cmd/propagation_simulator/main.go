@@ -17,6 +17,7 @@ func main() {
 		gethlogLevel = flag.String("loglevel", "crit", "Geth log level for whisper simulator (crti, error, warn, info, debug, trace)")
 		ttl          = flag.Int("ttl", 10, "TTL for generated messages")
 		size         = flag.Int("msgSize", 400, "Payload size for generated messages")
+		algorithm    = flag.String("algorithm", "whisperv6", "Propagation algorithm to use (whisperv6, gossip)")
 	)
 	flag.Parse()
 
@@ -28,7 +29,13 @@ func main() {
 	}
 	log.Printf("Loaded network graph from %s file", *input)
 
-	sim := NewSimulation(data)
+	algo := "whisperv6"
+	if *algorithm == "gossip" {
+		algo = "gossip"
+	} // TODO: add proper validation for algorithm
+	log.Printf("Using %s propagation algorithm", algo)
+
+	sim := NewSimulation(algo, data)
 	log.Printf("Starting message sending simulation for graph with %d nodes...", len(data.Nodes()))
 	sim.Start(*ttl, *size)
 	defer sim.Stop()

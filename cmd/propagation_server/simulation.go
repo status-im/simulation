@@ -8,6 +8,7 @@ import (
 
 	"github.com/divan/graphx/graph"
 	"github.com/status-im/simulation/propagation"
+	"github.com/status-im/simulation/propagation/gossip"
 	"github.com/status-im/simulation/propagation/whisperv6"
 )
 
@@ -19,8 +20,13 @@ type Simulation struct {
 }
 
 // NewSimulation creates Simulation for the given network.
-func NewSimulation(network *graph.Graph) *Simulation {
-	sim := whisperv6.NewSimulator(network)
+func NewSimulation(algo string, network *graph.Graph) *Simulation {
+	var sim propagation.Simulator
+	if algo == "whisperv6" {
+		sim = whisperv6.NewSimulator(network)
+	} else {
+		sim = gossip.NewSimulator(network, 4, 10)
+	}
 
 	return &Simulation{
 		network: network,

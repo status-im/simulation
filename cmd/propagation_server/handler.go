@@ -11,6 +11,7 @@ import (
 
 // SimulationRequests defines a POST request payload for simulation backend.
 type SimulationRequest struct {
+	Algorithm string          `json:"algorithm"`
 	SenderIdx int             `json:"senderIdx"` // index of the sender node (index of data.Nodes, in fact)
 	TTL       int             `json:"ttl"`       // ttl in seconds
 	MsgSize   int             `json:"msg_size"`  // msg size in bytes
@@ -46,8 +47,14 @@ func simulationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	algo := "whisperv6"
+	if req.Algorithm == "gossip" {
+		algo = "gossip"
+	} // TODO: add proper validation for algorithm
+	log.Printf("Using %s propagation algorithm", algo)
+
 	log.Printf("Loaded graph with %d nodes", network.NumNodes())
-	sim := NewSimulation(network)
+	sim := NewSimulation(algo, network)
 	sim.Start(req.SenderIdx, req.TTL, req.MsgSize)
 	defer sim.Stop()
 
