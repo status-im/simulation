@@ -3,7 +3,7 @@
 
 This simulator implements command for running different simulation implementations. Currently supported:
  - whisperv6
- - naive p2p propagation
+ - naive gossip propagation
 
 # Installation
 

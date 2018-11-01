@@ -5,7 +5,7 @@ This simulator server implements an API for running message propagation through 
 
 Currently supported:
  - whisperv6
- - naive p2p propagation
+ - naive gossip propagation
 
 
 Server expects a network topology as an input, and returns propagation log data.

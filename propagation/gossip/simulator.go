@@ -1,4 +1,4 @@
-package naivep2p
+package gossip
 
 import (
 	"crypto/rand"

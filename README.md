@@ -20,19 +20,19 @@ Original intent of these simulators is to provide stats and resulting traces/log
 
 ### Simulators support
 
-| Simulator   | State | Description |
+| Simulator  | Description | State |
 |---|---|---|
-| **WhisperV6** | Done | Master branch if go-ethereum Whisper implementation  |
-| **Naive**  | Done | Naive p2p propagation  |
-| PSS | TBD | Swarm's PSS messaging |
+| **WhisperV6** | Master branch if go-ethereum Whisper implementation  | Done |
+| **Gossip**  | Naive gossip p2p propagation  | Done |
+| PSS | Swarm's PSS messaging | TBD |
 
 ### Network environments support
 
-| Node type  | State | Description |
+| Node type  | Description | State |
 |---|---|---|
-| **In-Memory** | Done | Single node in-memory network  |
-| Exec  | TBD | Single node native binary network with localhost connection |
-| Docker | TBD | Docker-based network |
+| **In-Memory** | Done | Single node in-memory network  | Done |
+| Exec  | Single node native binary network with localhost connection | TBD |
+| Docker | Docker-based network | TBD |
 
 ## Usage
 
